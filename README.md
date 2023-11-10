@@ -5,32 +5,47 @@ This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next
 First, run the development server:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
 pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setting up tRPC
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+[tRPC Set up with Next.js](https://trpc.io/docs/client/nextjs/setup)
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+More info on [React Query Integration](https://trpc.io/docs/client/react)
 
-## Learn More
+- Install required packages
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+pnpm add @trpc/server @trpc/client @trpc/react-query @trpc/next @tanstack/react-query@^4.0.0 zod
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Enable strict mode
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+If you want to use Zod for input validation, make sure you have enabled strict mode in your `tsconfig.json`:
 
-## Deploy on Vercel
+```json
+"compilerOptions": {
++   "strict": true
+}
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Create `trpc.ts` file inside `server` directory at the root level
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+### Create a tRPC router
+
+Initialize your tRPC backend in `server/trpc.ts` using the initTRPC function, and create your first router.
+
+```ts
+import { initTRPC } from '@trpc/server';
+
+// Avoid exporting the entire t-object
+// since it's not very descriptive.
+// For instance, the use of a t variable
+// is common in i18n libraries.
+const t = initTRPC.create();
+
+// Base router and procedure helpers
+export const router = t.router;
+export const procedure = t.procedure;
+```
