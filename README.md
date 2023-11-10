@@ -268,3 +268,5 @@ export default function TodoList() {
 ```
 
 - Now bring the client component to the page
+
+## Alternative implementation of Drizzle ORM for database connection
