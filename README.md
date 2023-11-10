@@ -94,3 +94,173 @@ const handler = (req: Request) =>
 
 export { handler as GET, handler as POST };
 ```
+
+### Making the request using React Query from the client
+
+[Set up the React Query Integration](https://trpc.io/docs/client/react/setup)
+
+- Create a tRPC client
+- Inside `app` directory create a directory `_trpc` and within that directory create `client.ts`
+
+Note: Any directory starts with `_` is ignored by `App Router` in terms of routing
+
+- Create tRPC React Client
+
+- Get `AppRouter` types from the `server`
+(Create a set of strongly-typed React hooks from your AppRouter type signature with createTRPCReact.)
+
+```ts
+import { createTRPCReact } from '@trpc/react-query';
+
+import { type AppRouter } from '@/server';
+
+export const trpc = createTRPCReact<AppRouter>({});
+
+```
+
+- getTodos type is comming from the server to the client
+- This is how routing all type from server code to client code
+
+```ts
+(alias) type AppRouter = Router<RouterDef<RootConfig<{
+    ctx: object;
+    meta: object;
+    errorShape: DefaultErrorShape;
+    transformer: DefaultDataTransformer;
+}>, {
+    getTodos: BuildProcedure<...>;
+}, {
+    ...;
+}>> & {
+    getTodos: BuildProcedure<...>;
+}
+import AppRouter
+```
+
+- React Query needs a provider, there is a need to create a query client  `QueryClient` as well as provider client `QueryClientProvider`
+
+### Create a Provider
+
+- Create `Provider.tsx` in `_trpc` directory
+
+- Create React `QueryClient`
+
+```tsx
+const [queryClient] = useState(() => new QueryClient());
+```
+
+- And `trpcClient`
+
+```tsx
+const [trpcClient] = useState(() =>
+    trpc.createClient({
+      links: [
+        httpBatchLink({
+          url: 'http://localhost:3000/trpc',
+
+          // You can pass any HTTP headers you wish here
+          async headers() {
+            return {
+              authorization: getAuthCookie(),
+            };
+          },
+        }),
+      ],
+    }),
+  );
+```
+
+- And return `QueryClientProvider`
+
+```tsx
+return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </trpc.Provider>
+  );
+```
+
+- `Provider.tsx` looks like this
+
+```tsx
+'use client';
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { httpBatchLink } from '@trpc/client';
+import React, { useState } from 'react';
+import { trpc } from './client';
+
+export default function Provider({ children }: { children: React.ReactNode }) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() =>
+    trpc.createClient({
+      links: [
+        httpBatchLink({
+          url: 'http://localhost:3002/api/trpc',
+
+          // You can pass any HTTP headers you wish here
+          //   async headers() {
+          //     return {
+          //       authorization: getAuthCookie(),
+          //     };
+          //   },
+        }),
+      ],
+    })
+  );
+
+  return (
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    </trpc.Provider>
+  );
+}
+```
+
+### User Provider in the `layout.tsx`
+
+- Bring in `Provider` and wrap `children`
+
+```tsx
+import Provider from './_trpc/Provider';
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>
+        <Provider>{children}</Provider>
+      </body>
+    </html>
+  );
+}
+```
+
+### Create a TodoList Client Component
+
+- Create `_components` directory in the `app` directory and within create `TodoList.tsx`
+
+- Make the request to get todos
+
+- `getTodos` function is already on `trpc` client as well as `useQuery` from React Query Provider
+
+```tsx
+'use client';
+
+import { trpc } from '../_trpc/client';
+
+export default function TodoList() {
+  const getTodos = trpc.getTodos.useQuery();
+
+  return (
+    <div>
+      <div>{JSON.stringify(getTodos.data)}</div>
+    </div>
+  );
+}
+```
+
+- Now bring the client component to the page
