@@ -1,3 +1,5 @@
+# Next 13 App Router tRPC implementation
+
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
@@ -47,5 +49,48 @@ const t = initTRPC.create();
 
 // Base router and procedure helpers
 export const router = t.router;
-export const procedure = t.procedure;
+export const publicProcedure = t.procedure;
+```
+
+- Initialize an instance of the the `router` inside the `index.ts` file in the `server` directory
+
+- Make the `getTodos` router/function and create a procedure on it
+
+```ts
+import { publicProcedure, router } from './trpc';
+
+export const appRouter = router({
+  getTodos: publicProcedure.query(async () => {
+    return [10, 20, 30];
+  }),
+});
+
+// export type definition of API
+export type AppRouter = typeof appRouter;
+```
+
+- Connect the router into the App Router itself
+- Create a route inside of the app directory, that's going to route requests to that tRPC instance
+
+- Create `route.ts` inside `app/api/[trpc]`
+
+- This is the big difference between `Pages Router` and `App Router` implementation
+- In the `Pages Router` there is an already setup adapter
+
+- For the `App Router` `fetch adapter` should be used
+
+```ts
+import { fetchRequestHandler } from '@trpc/server/adapters/fetch';
+
+import { appRouter } from '@/server';
+
+const handler = (req: Request) =>
+  fetchRequestHandler({
+    endpoint: '/api/trpc',
+    req,
+    router: appRouter,
+    createContext: () => ({}),
+  });
+
+export { handler as GET, handler as POST };
 ```
