@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  todo-trpc-dev-db:
+    image: postgres
+    container_name: todo-trpc-dev-db
+    environment:
+      POSTGRES_DB: todo-trpc-dev-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 98765432123456789
+    ports:
+      - '5432:5432'

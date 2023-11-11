@@ -268,3 +268,159 @@ export default function TodoList() {
 ```
 
 - Now bring the client component to the page
+
+### Setup Prisma
+
+```bash
+pnpx prisma --save-dev
+```
+
+```bash
+pnpx prisma init
+```
+
+- Update the `DATABASE_URL` inside `.env` file with the development database
+
+- Add `Todo` model to the `schema.prisma`
+
+```prisma
+model Todo {
+  id      Int      @id @default(autoincrement())
+  content String?
+  done    Boolean?
+}
+```
+
+### Refactor tRPC server
+
+- Create an `api` directory inside `server` directory
+- Move `trpc.ts` into `api` directory
+- Create `routers` directory inside `api` directory
+- Move `index.ts` file which has `appRouter` to `routers` directory and rename it as `todo.ts`
+- Create `root.ts` inside `api` directory
+
+```ts
+import { router } from './trpc';
+import { todoRouter } from './routers/todo';
+
+export const appRouter = router({
+  todo: todoRouter,
+});
+
+// export type definition of API
+export type AppRouter = typeof appRouter;
+```
+
+- Refactor `app.ts` (where appRouter and getTodos method created) rename `app.ts` to `todo.ts`
+
+```ts
+import { publicProcedure, router } from '../trpc';
+
+export const todoRouter = router({
+  getTodos: publicProcedure.query(async () => {
+    return [10, 20, 30, 40, 50, 60];
+  }),
+});
+```
+
+- Update `route.ts` inside `app/trpc/[trpc]` and `client.ts` inside `app/_trpc` import, direct it to root.ts
+
+- Update `TodoList.tsx` component
+- Add `todo` router after `trpc` client
+
+```tsx
+  const getTodos = trpc.todo.getTodos.useQuery();
+```
+
+## Install Prisma Client
+
+```bash
+pnpm install @prisma/client
+```
+
+Whenever you update your Prisma schema, you will have to update your database schema using either `prisma migrate dev` or `prisma db push`. This will keep your database schema in sync with your Prisma schema. The commands will also regenerate Prisma Client.
+
+- Instantiate Prisma Client (Singleton)
+- Create `db.ts` inside `server` directory
+
+[Best practice for instantiating PrismaClient with Next.js](https://www.prisma.io/docs/guides/other/troubleshooting-orm/help-articles/nextjs-prisma-client-dev-practices#solution)
+
+```ts
+import { PrismaClient } from '@prisma/client'
+
+const prismaClientSingleton = () => {
+  return new PrismaClient()
+}
+
+type PrismaClientSingleton = ReturnType<typeof prismaClientSingleton>
+
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClientSingleton | undefined
+}
+
+const db = globalForPrisma.prisma ?? prismaClientSingleton()
+
+export default db
+
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = db
+```
+
+- Inside `todo` router, connect prisma client
+
+```ts
+import prisma from '@/server/db';
+import { publicProcedure, router } from '../trpc';
+
+export const todoRouter = router({
+  getTodos: publicProcedure.query(async () => {
+    return db.todo.findMany();
+  }),
+});
+```
+
+- Add `createTodo` method
+
+```ts
+import db from '@/server/db';
+import { publicProcedure, router } from '../trpc';
+
+import { z } from 'zod';
+
+export const todoRouter = router({
+  getTodos: publicProcedure.query(async () => {
+    return await db.todo.findMany();
+  }),
+  addTodo: publicProcedure.input(z.string()).mutation(async opts => {
+    return await db.todo.create({ data: { content: opts.input, done: false } });
+  }),
+});
+```
+
+- Connect it to `TodoList` component
+- Code the UI
+
+- Bring in `addTodo` function add `onSettled` property to refetch after adding the new todo to database
+
+```tsx
+  const addTodo = trpc.todo.addTodo.useMutation({
+    onSettled: () => {
+      getTodos.refetch();
+    },
+  });
+```
+
+- On button click, send the content of the `content` context via mutate method `addTodo.mutate(content);`
+
+```tsx
+        <button
+          className="px-4 py-2 rounded-lg bg-gray-800 text-white hover:bg-gray-700"
+          onClick={async () => {
+            if (content.length) {
+              addTodo.mutate(content);
+              setContent('');
+            }
+          }}
+        >
+          Add Todo
+        </button>
+```
