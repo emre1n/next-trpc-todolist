@@ -299,6 +299,17 @@ model Todo {
 - Move `index.ts` file which has `appRouter` to `routers` directory and rename it as `todo.ts`
 - Create `root.ts` inside `api` directory
 
+tRPC Server Folder Structure
+
+```text
+server
+  ├─ api
+  |   └─ routers
+  |   |       └─ todo.ts
+  |   └─ root.ts
+  |   └─ trpc.ts
+```
+
 ```ts
 import { router } from './trpc';
 import { todoRouter } from './routers/todo';
