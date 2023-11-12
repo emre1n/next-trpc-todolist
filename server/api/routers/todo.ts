@@ -10,4 +10,19 @@ export const todoRouter = router({
   addTodo: publicProcedure.input(z.string()).mutation(async opts => {
     return await db.todo.create({ data: { content: opts.input, done: false } });
   }),
+  setDone: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        done: z.boolean(),
+      })
+    )
+    .mutation(async opts => {
+      const { id, done } = opts.input;
+
+      return await db.todo.update({
+        where: { id },
+        data: { done },
+      });
+    }),
 });
