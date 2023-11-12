@@ -2,9 +2,18 @@
 import { useState } from 'react';
 
 import { trpc } from '../_trpc/client';
+import { serverClient } from '../_trpc/serverClient';
 
-export default function TodoList() {
-  const getTodos = trpc.todo.getTodos.useQuery();
+export default function TodoList({
+  initialTodos,
+}: {
+  initialTodos: Awaited<ReturnType<(typeof serverClient)['todo']['getTodos']>>;
+}) {
+  const getTodos = trpc.todo.getTodos.useQuery(undefined, {
+    initialData: initialTodos,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
   const addTodo = trpc.todo.addTodo.useMutation({
     onSettled: () => {
       getTodos.refetch();

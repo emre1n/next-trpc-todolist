@@ -435,3 +435,89 @@ export const todoRouter = router({
           Add Todo
         </button>
 ```
+
+- Create `setDone` Procedure inside `todo` router
+
+```ts
+setDone: publicProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        done: z.boolean(),
+      })
+    )
+    .mutation(async opts => {
+      const { id, done } = opts.input;
+
+      return await db.todo.update({
+        where: { id },
+        data: { done },
+      });
+    }),
+```
+
+- Connect it to `TodoList` component
+
+### Server Side Calls / SSR Support
+
+[Server Side Calls](https://trpc.io/docs/server/server-side-calls#create-caller)
+
+- Create `serverClient.ts` inside `_trpc` directory of `app`
+- Inside the `serverClient.ts` use `createCaller` function
+
+- Go to `page.tsx` Home Page
+- Bring in the `serverClient`
+- Make the page function `async`
+
+- Get the `todos`, since it returns a `promise`, `await` it
+
+```tsx
+const todos = await serverClient.todo.getTodos();
+```
+
+- `todos` are totally type-safe
+
+```ts
+const todos: {
+    id: number;
+    content: string | null;
+    done: boolean | null;
+}[]
+```
+
+- Pass the `todos` to `TodoList` component as `initialTodos`
+- Add the `initialTodos` prop to `TodoList` component
+- Bring the type of `initialTodos` from `serverClient` `getTodos` procedure
+
+- Because `serverClient` returns a Promise, it should be `Awaited` typing
+
+```tsx
+export default function TodoList({
+  initialTodos,
+}: {
+  initialTodos: Awaited<ReturnType<(typeof serverClient)['todo']['getTodos']>>;
+}) {
+  // Rest of the component
+}
+  ```
+
+- Send the `intialTodos` to `useQuery` of `getTodos`
+
+```tsx
+  const getTodos = trpc.todo.getTodos.useQuery(undefined, {
+    initialData: initialTodos,
+  });
+```
+
+[Using `initialData` to prepopulate a query](https://tanstack.com/query/v4/docs/react/guides/initial-query-data#using-initialdata-to-prepopulate-a-query)
+
+- To avoid making the initial call on the client (When mounted) after SSR
+- Add `refetchOnMount` and `refetchOnReconnect` to `useQuery` and set them `false`
+
+```tsx
+  const getTodos = trpc.todo.getTodos.useQuery(undefined, {
+    initialData: initialTodos,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+  });
+```
