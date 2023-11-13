@@ -521,3 +521,5 @@ export default function TodoList({
     refetchOnReconnect: false,
   });
 ```
+
+Note: For the alternative `drizzle` setup switch to `alternative-drizzle-implementatio` branch
