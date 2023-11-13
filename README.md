@@ -270,3 +270,66 @@ export default function TodoList() {
 - Now bring the client component to the page
 
 ## Alternative implementation of Drizzle ORM for database connection
+
+- Add `drizzle-orm` and sqlite adapter `better-sqlite3`
+
+```bash
+pnpm drizzle-orm better-sqlite3
+```
+
+- Add sqlite types
+
+```bash
+pnpm add @types/better-sqlite3 -D
+```
+
+- Create database schema inside the `db` directory in the `schema.ts` file
+
+```ts
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+
+export const todos = sqliteTable('todos', {
+  id: integer('id').primaryKey(),
+  content: text('content'),
+  done: integer('done'),
+});
+```
+
+- Create `drizzle.config.ts` file at the root folder
+
+```ts
+import type { Config } from 'drizzle-kit';
+
+export default {
+  schema: './db/schema.ts',
+  out: './drizzle',
+  driver: 'better-sqlite',
+  dbCredentials: {
+    url: 'sqlite.db',
+  },
+} satisfies Config;
+```
+
+- Add `drizzle-kit` to do the database migrations
+
+```bash
+pnpm add drizzle-kit
+```
+
+- Use `drizzle-kit` to do the first migrations
+
+```bash
+pnpm drizzle-kit generate:sqlite
+```
+
+- Fix the `ERROR: Transforming const to the configured target environment ("es5") is not supported yet`, update the `tsconfig.json` by updating `target` from `es5` to `es6`
+
+```json
+{
+  "compilerOptions": {
+    "target": "es6",
+  }
+}
+```
+
+- Do the migration
